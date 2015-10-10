@@ -1,0 +1,241 @@
+#!/bin/bash
+
+if [ "$(id -u)" != "0" ]; then
+   echo "Script must be run as root !"
+   exit 0
+fi
+
+
+echo ""
+date
+echo -e "\033[36m==================================================="
+echo "Creating Ubuntu/Debian SD Card (image) for OrangePI"
+echo -e "===================================================\033[37m"
+echo ""
+
+_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+cd $_DIR
+
+# ===================================================
+if [ "${1}" = "" ]; then
+    echo "Source directory not specified."
+    echo "USAGE: image_from_dir <directory> <img_name | /dev/sdX>"
+    exit 0
+fi
+
+if [ "${2}" = "" ]; then
+    echo "Destination not specified."
+    echo "USAGE: image_from_dir <directory> <img_name | /dev/sdX>"
+    exit 0
+fi
+
+idir=$1
+
+if [ ! -d $idir ]; then
+    echo "Source directory not found."
+    echo "USAGE: image_from_dir <directory> <img_name | /dev/sdX> [noformat]"
+    exit 0
+fi
+# ===================================================
+
+. params.sh
+
+# ********************************************************
+# Linux partition size IS CALCULATED from directory size *
+# ********************************************************
+_ext4size=`du -s $1 | awk '{print $1}'`
+ext4sizeMB=$(expr $_ext4size / 1024)
+ext4size=$(expr $ext4sizeMB / 2 + $ext4sizeMB)
+linuxsize=$(expr $ext4sizeMB + 250)
+
+_boot_on_ext4="no"
+
+
+image_name="$2"
+odir="_extdir"
+bootdir="_fatdir"
+
+if [ "${3}" != "noformat" ] ; then
+# =========
+. format.sh
+# =========
+fi
+
+# === Show info ===============
+echo ""
+echo "==== Info ===="
+echo "    from: $idir"
+echo "      to: $sdcard"
+#echo "ext4boot: $_boot_on_ext4"
+if [ "${_format}" = "btrfs" ] ; then
+    echo "   btrfs: yes"
+else
+    echo "   btrfs: no"
+fi
+echo "dir size: $ext4sizeMB MB"
+echo "img size: $linuxsize MB"
+echo "=============="
+echo ""
+
+# -------------------------------------------------------------------
+    
+if [ ! "${_boot_on_ext4}" = "yes" ] ; then
+    if [ ! -d $bootdir ]; then
+	mkdir -p $bootdir
+    fi
+    rm $bootdir/* > /dev/null 2>&1
+    sync
+    umount $bootdir > /dev/null 2>&1
+fi
+
+if [ ! -d $odir ]; then
+    mkdir -p $odir
+fi
+rm -rf $odir/* > /dev/null 2>&1
+sync
+umount $odir > /dev/null 2>&1
+sleep 1
+
+# ================
+# MOUNT PARTITIONS
+# ================
+
+if [ "${_format}" = "btrfs" ] ; then
+    _mntopt="-o compress-force=lzo"
+else
+    _mntopt=""
+fi
+
+echo ""
+echo "Mounting SD Card partitions..."
+
+if [ ! "${_boot_on_ext4}" = "yes" ] ; then
+    if ! mount ${sdcard}1 $bootdir; then
+	echo "ERROR mounting fat partitions..."
+	exit 1
+    fi
+    if ! mount ${_mntopt} ${sdcard}2 $odir; then
+	echo "ERROR mounting linux partitions..."
+	umount $bootdir
+	exit 1
+    fi
+    echo "FAT partitions mounted to $bootdir"
+else
+    if ! mount ${_mntopt} ${sdcard}1 $odir; then
+	echo "ERROR mounting linux partitions..."
+	exit 1
+    fi
+fi
+echo "linux partition mounted to $odir"
+
+
+#-----------------------------------------------------------------------------------------------
+echo ""
+echo "Copying file system to image ..."
+echo ""
+
+#-------------------------------------------------------------------------------
+rsync -r -t -p -o -g -x --delete -l -H -D --numeric-ids -s --stats $idir/ $odir/
+#-------------------------------------------------------------------------------
+sync
+
+# === Copy kernel & modules ================================
+cp orange/uImage_OPI* $odir/boot > /dev/null 2>&1
+cp orange/boot0_OPI.fex $odir/boot > /dev/null 2>&1
+cp orange/u-boot_OPI*.fex $odir/boot > /dev/null 2>&1
+cp orange/uImage_OPI-2 $odir/boot/uImage > /dev/null 2>&1
+cp orange/script.bin.OPI-* $odir/boot > /dev/null 2>&1
+rm -r $odir/lib/* > /dev/null 2>&1
+cp -rf orange/lib/modules $odir/lib > /dev/null 2>&1
+if [ ! "${_boot_on_ext4}" = "yes" ] ; then
+    cp orange/uImage_OPI-2 $bootdir/uImage > /dev/null 2>&1
+	cp orange/uImage_OPI* $bootdir > /dev/null 2>&1
+	cp orange/script.bin.OPI-* $bootdir > /dev/null 2>&1
+fi
+cp install_* $odir/usr/local/bin > /dev/null 2>&1
+# ==========================================================
+sync
+
+
+# ************************
+# Create fs_resize warning
+# ************************
+cat > ${odir}/usr/local/bin/fs_resize_warning << _EOF_
+#!/bin/sh
+
+echo -e "\033[31m\033[1m****************************************"
+echo -e "WARNING: TO RESIZE FILESYSTEM RUN:"
+echo -e "sudo fs_resize"
+echo -e "to remove this message run:"
+echo -e "sudo rm /usr/local/bin/fs_resize_warning"
+echo -e "****************************************\033[22m\033[37m"
+setterm -default
+
+_EOF_
+
+# ***************
+# Create fstab
+# ***************
+echo "Creating \"fstab\""
+echo "# OrangePI fstab" > $odir/etc/fstab
+if [ "${_format}" = "btrfs" ] ; then
+    echo "/dev/mmcblk0p2  /  btrfs subvolid=0,noatime,nodiratime,compress=lzo  0 1" >> $odir/etc/fstab
+else
+    echo "/dev/mmcblk0p2  /  ext4  errors=remount-ro,noatime,nodiratime  0 1" >> $odir/etc/fstab
+fi
+echo "/dev/mmcblk0p1  /media/boot  vfat  defaults  0 0" >> $odir/etc/fstab
+echo "tmpfs /tmp  tmpfs nodev,nosuid,mode=1777  0 0" >> $odir/etc/fstab
+
+echo ""
+
+echo "sync, please wait ..."
+sync
+
+# UMOUNT
+if [ ! "${_boot_on_ext4}" = "yes" ] ; then
+  if ! umount $bootdir; then
+      echo "ERROR unmounting fat partition."
+      exit 0
+  fi
+  rm -rf $bootdir/* > /dev/null 2>&1
+  rmdir $bootdir > /dev/null 2>&1
+fi  
+
+if ! umount $odir; then
+    echo "ERROR unmounting linux partitions."
+    exit 0
+fi
+
+rm -rf $odir/* > /dev/null 2>&1
+rmdir $odir > /dev/null 2>&1
+sync
+
+if [ -f ${sdcard}u ] && [ -f ${sdcard}2 ]; then
+    echo "Creating SDCard image..."
+    dd if=${sdcard}u of=${sdcard} > /dev/null 2>&1
+    
+    if [ -f ${sdcard}1 ]; then
+	dd if=${sdcard}1 of=${sdcard} bs=1M conv=notrunc oflag=append > /dev/null 2>&1
+    fi
+    
+    if [ -f ${sdcard}2 ]; then
+	dd if=${sdcard}2 of=${sdcard} bs=1M conv=notrunc oflag=append > /dev/null 2>&1
+    fi
+
+    if [ "${_compress}" = "yes" ]; then 
+	echo "Compressing image..."
+	xz -z -k -9 -f -v $sdcard
+	md5sum $sdcard > $sdcard.md5sum
+	md5sum $sdcard.xz > $sdcard.xz.md5sum
+    fi
+fi
+
+echo ""
+date
+echo ""
+echo -e "\033[36m*********************"
+echo "SDCard image created."
+echo -e "*********************\033[37m"
+echo ""
+
+exit 0

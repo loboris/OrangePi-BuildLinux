@@ -1,0 +1,126 @@
+#!/bin/bash
+
+# ******************************
+# Install minimal lxde desktop *
+# ******************************
+
+if [ "$(id -u)" != "0" ]; then
+    echo "Script must be run as root !"
+    exit 0
+fi
+
+echo ""
+date
+echo -e "\033[36m======================="
+echo -e "Installing LXDE Desktop"
+echo -e "=======================\033[37m"
+setterm -default
+echo ""
+
+# Check if we have enough disk space.
+S=`df / | tail -n 1 | awk '{printf $4}' | sed s/[G,M,K]//g`
+if [ "$S" -le "500000" ]; then
+    echo "We need at least 500MB free to perform minimal desktop instalation"
+    echo "Have you resized your partition (fs_resize)?"
+    exit 0
+fi
+
+# SET USER NAME !!
+_user="orangepi"
+
+logfile="lxde_install.log"
+#logfile=/dev/stdout
+
+#_auto=""
+_auto="-y -q"
+_DST=`lsb_release -si`
+_REL=`lsb_release -sc`
+
+
+echo "Package update..."
+apt-get $_auto update >> $logfile
+echo "Package upgrade..."
+apt-get $_auto upgrade >> $logfile
+echo ""
+
+echo "$_DST - $_REL, Installing LXDE DESKTOP..."
+echo "$_DST - $_REL, Installing LXDE DESKTOP..." > $logfile
+
+# === Install desktop =============================================================================================================================================================
+echo "  installing xserver & lxde desktop, please wait..."
+apt-get $_auto install xinit xserver-xorg >> $logfile
+apt-get $_auto install lxde lightdm lightdm-gtk-greeter policykit-1 --no-install-recommends >> $logfile
+apt-get clean
+
+if [ "${_DST}" = "Ubuntu" ] ; then
+    apt-get $_auto install humanity-icon-theme --no-install-recommends >> $logfile
+fi
+apt-get $_auto install pulseaudio pulseaudio-module-x11 pulseaudio-utils alsa-base alsa-oss alsa-utils alsa-tools libasound2-data pavucontrol --no-install-recommends >> $logfile
+apt-get $_auto install smplayer >> $logfile
+apt-get $_auto install synaptic software-properties-gtk lxtask galculator policykit-1-gnome gksu --no-install-recommends >> $logfile
+apt-get clean
+
+# === Install network packages & internet browser =================================================================================================================================
+# === you don't have to install internet browser, you can save ~100MB ===
+
+echo "  installing network packages, please wait..."
+if [ "${_DST}" = "Ubuntu" ] ; then
+    apt-get $_auto install chromium-browser gvfs-fuse gvfs-backends network-manager-gnome --no-install-recommends >> $logfile
+else
+    apt-get $_auto install iceweasel gvfs-fuse gvfs-backends network-manager-gnome --no-install-recommends >> $logfile
+fi
+apt-get clean
+
+if [ "${1}" = "lubuntu" ] && [ "${_DST}" = "Ubuntu" ]; then
+    apt-get $_auto install lubuntu-core gnome-system-monitor --no-install-recommends >> $logfile
+fi
+
+# === Configuration ===============================================================================================================================================================
+echo ""
+echo "Configuring desktop..."
+
+if [ -f /etc/X11/Xwrapper.config ]; then
+    cat /etc/X11/Xwrapper.config | sed s/"allowed_users=console"/"allowed_users=anybody"/g > /tmp/_xwrap
+    mv /tmp/_xwrap /etc/X11/Xwrapper.config
+fi
+
+if [ -f /etc/lightdm/lightdm-gtk-greeter.conf ]; then
+    cat /etc/lightdm/lightdm-gtk-greeter.conf | sed "/background=\/usr/d" > /tmp/_greet
+    mv /tmp/_greet /etc/lightdm/lightdm-gtk-greeter.conf
+    cat /etc/lightdm/lightdm-gtk-greeter.conf | sed '/\[greeter\]/abackground=\/usr\/share\/lxde\/wallpapers\/lxde_blue.jpg' > /tmp/_greet
+    mv /tmp/_greet /etc/lightdm/lightdm-gtk-greeter.conf
+fi
+
+#*********************
+# ** CONFIGURE SOUND
+#*********************
+cat > /etc/asound.conf << _EOF_
+pcm.!default {
+    type hw
+    card 1    #If you want to set HDMI as output ,turn 0 to 1.
+    device 0
+  }
+  ctl.!default {
+    type hw
+    card 1   #If you want to set HDMI as output ,turn 0 to 1.
+  }
+_EOF_
+
+if [ -f /etc/pulse/default.pa ]; then
+    cat /etc/pulse/default.pa | sed s/"load-module module-udev-detect$"/"load-module module-udev-detect tsched=0"/g > /tmp/default.pa
+    mv /tmp/default.pa /etc/pulse/default.pa
+fi
+
+
+usermod -a -G adm,dialout,cdrom,dip,video,plugdev,netdev,fuse $_user
+
+chown -R $_user:$_user /home/$_user
+
+echo ""
+echo -e "\033[36m**********************************************"
+echo -e "* LXDE DESKTOP INSTALLED, please REBOOT now! *"
+echo -e "**********************************************\033[37m"
+setterm -default
+date
+echo ""
+

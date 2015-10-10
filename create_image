@@ -1,0 +1,410 @@
+#!/bin/bash
+
+# Last update: 2015-06-21
+# *****************************************************
+# !! REMEMBER TO SET PARAMETERS IN FILE "second-stage *
+# *****************************************************
+
+if [ "$(id -u)" != "0" ]; then
+   echo "Script must be run as root !"
+   exit 0
+fi
+
+echo ""
+date
+echo -e "\033[36m======================================================="
+echo -e "Creating Ubuntu/Debian SD Card instalation for OrangePI"
+echo -e "=======================================================\033[37m"
+echo ""
+
+_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+cd $_DIR
+
+. params.sh
+
+#===================================================================
+
+# ============================================
+if [ "${distro}" = "" ]; then
+    echo "Distribution must be specified."
+    exit 0
+fi
+if [ "${repo}" = "" ]; then
+    echo "Repository must be specified."
+    exit 0
+fi
+# ============================================
+
+#===================================================================
+
+
+_excode=0
+
+# **** show progress *******
+proc_wait() {
+    spin='-\|/'
+
+    i=0
+    while kill -0 $1 2>/dev/null
+    do
+      i=$(( (i+1) %4 ))
+      printf "\r$2 ${spin:$i:1}"
+      sleep .1
+    done
+    _excode=$?
+
+    if [ $_excode -eq 0 ]
+    then
+      printf "\rOK.                        \n"
+    else
+      printf "\rERROR.                     \n"
+    fi
+}
+# **************************
+
+if [ "${_format}" = "btrfs" ] ; then
+    _mntopt="-o compress-force=lzo"
+else
+    _mntopt=""
+fi
+
+# ===================
+. format.sh
+# ===================
+
+if [ "${odir}" = "" ] || [ "${bootdir}" = "" ]; then
+    echo "FATAL ERROR."
+    exit 1
+fi
+
+
+# ===================
+# Prepare directories
+# ===================
+if [ ! "${_boot_on_ext4}" = "yes" ] ; then
+    if [ ! -d $bootdir ]; then
+	mkdir -p $bootdir
+    fi
+    rm $bootdir/* > /dev/null 2>&1
+    sync
+    umount $bootdir > /dev/null 2>&1
+fi
+
+
+if [ ! -d $odir ]; then
+    mkdir -p $odir
+fi
+rm -rf $odir/* > /dev/null 2>&1
+sync
+
+umount $odir > /dev/null 2>&1
+sleep 1
+
+# ===========================================
+# IF USING SD CARD OR IMAGE, MOUNT PARTITIONS
+# ===========================================
+if [ ! "${sdcard}" = "" ]; then
+    echo ""
+    echo "Mounting SD Card partitions..."
+
+    if [ ! "${_boot_on_ext4}" = "yes" ] ; then
+	if ! mount ${sdcard}1 $bootdir; then
+	    echo "ERROR mounting partitions..."
+	    exit 1
+	fi
+	if ! mount ${_mntop} ${sdcard}2 $odir; then
+	    echo "ERROR mounting partitions..."
+	    umount $bootdir
+	    exit 1
+	fi
+        echo "SD Card partitions mounted to $odir & $bootdir"
+    else
+	if ! mount ${_mntop} ${sdcard}1 $odir; then
+	    echo "ERROR mounting partitions..."
+            if [ ! "${_boot_on_ext4}" = "yes" ] ; then
+	        umount $bootdir
+	    fi
+	    exit 1
+	fi
+	echo "SD Card partition mounted to $odir"
+    fi
+fi
+
+#===================================================================================================================
+# ========================
+# DEBOOTSTRAP LINUX DISTRO
+# ========================
+echo ""
+
+touch $odir/_$distro
+
+echo "DEBOOTSTRAP, FIRST STAGE"
+if [ "${raspbian}" = "yes" ] ; then
+  debootstrap --arch armhf --foreign --no-check-gpg --include=ca-certificates --verbose --include=wget ${distro} $odir $repo > /dev/null 2>&1 &
+else
+  debootstrap --arch armhf --foreign --verbose --variant=minbase --include=wget ${distro} $odir $repo > /dev/null 2>&1 &
+fi
+pid=$!
+proc_wait $pid "please wait"
+if [ $_excode -ne 0 ]; then
+    echo "ERROR IN DEBOOTSTRAP!"
+    exit 0
+fi
+
+# ***************************
+# ** CREATE NEW sources.list:
+# ***************************
+echo "Creating \"sources.list\""
+case ${distro} in
+trusty|utopic|precise|vivid*)
+cat > $odir/sources.list << _EOF_
+deb $repo/ $distro main restricted universe multiverse
+deb-src $repo/ $distro main restricted universe multiverse
+deb $repo/ $distro-updates main restricted universe multiverse
+deb-src $repo/ $distro-updates main restricted universe multiverse
+deb $repo/ $distro-security main restricted universe multiverse
+deb $repo/ $distro-backports main restricted universe multiverse
+
+_EOF_
+;;*)
+if [ "${raspbian}" = "yes" ] ; then
+cat > $odir/sources.list << _EOF_
+deb $repo/ $distro main contrib non-free
+deb-src $repo/ $distro main contrib non-free
+
+_EOF_
+else
+cat > $odir/sources.list << _EOF_
+deb $repo/ $distro main contrib non-free
+deb-src $repo/ $distro main contrib non-free
+
+deb $repo/ $distro-updates main contrib non-free
+deb-src $repo/ $distro-updates main contrib non-free
+
+deb $repo/ $distro-backports main contrib non-free
+deb-src $repo/ $distro-backports main contrib non-free
+
+_EOF_
+fi
+;;esac
+
+#if [ ! "${ONLY_BASE}" = "yes" ] ; then
+#    echo "deb http://debian.xypron.de/ unstable/all/" >> $odir/sources.list
+#    echo "deb http://debian.xypron.de/ unstable/armhf/" >> $odir/sources.list
+#fi
+
+
+# ==============================================
+# Make necessary directories and copy some files
+# ==============================================
+mkdir -p $odir/etc/default > /dev/null 2>&1
+if [ ! "${_boot_on_ext4}" = "yes" ] ; then
+    mkdir -p $odir/media/boot
+fi
+mkdir -p $odir/usr/local/bin
+mkdir -p $odir/usr/bin > /dev/null 2>&1
+
+cp /etc/timezone $odir/etc
+cp /usr/bin/qemu-arm-static $odir/usr/bin
+cp second-stage $odir/second-stage
+cp params.sh $odir/params.sh
+if [ ! "${ONLY_BASE}" = "yes" ] ; then
+    cp wallpaper.png $odir/ > /dev/null 2>&1
+	#cp orange/libjpeg62-turbo_1.3.1-12_armhf.deb $odir/ > /dev/null 2>&1
+fi
+
+# =====================================================================================
+# Execute debootstram second stage and install base system
+# =====================================================================================
+
+# ********************************************************************************
+# *** If running on ARM (OrangePI) USE THE LINE WITHOUT "qemu-arm-static" !!! ****
+# ********************************************************************************
+#if ! chroot $odir /bin/bash /second-stage; then
+if ! chroot $odir /usr/bin/qemu-arm-static -cpu cortex-a9 /bin/bash /second-stage; then
+    mv $odir/install.log . > /dev/null 2>&1
+    echo "================================================"
+    echo "ERROR on second-stage, instalation NOT FINISHED."
+    echo "================================================"
+    exit 1
+fi
+
+if [ ! -f $odir/_OK_ ]; then
+    mv $odir/install.log . > /dev/null 2>&1
+    echo "================================================"
+    echo "ERROR on second-stage, instalation NOT FINISHED."
+    echo "================================================"
+    exit 1
+fi
+
+#======================================================================================
+
+rm $odir/_OK_ > /dev/null 2>&1
+rm $odir/second-stage > /dev/null 2>&1
+rm $odir/params.sh > /dev/null 2>&1
+mv $odir/install.log ./install-${distro}.log > /dev/null 2>&1
+
+# === Copy scripts ========================
+cp fs_resize $odir/usr/local/bin
+cp update_boot.sh $odir/usr/local/bin
+cp install_to_emmc $odir/usr/local/bin
+if [ ! "${ONLY_BASE}" = "yes" ] ; then
+    cp install_lxde_desktop $odir/usr/local/bin
+    cp install_mate_desktop $odir/usr/local/bin
+    cp install_xfce_desktop $odir/usr/local/bin
+fi
+# =========================================
+
+# === Copy kernel & modules ================================
+mkdir -p $odir/boot > /dev/null 2>&1
+
+cp orange/uImage_OPI* $odir/boot > /dev/null 2>&1
+cp orange/boot0_OPI.fex $odir/boot > /dev/null 2>&1
+cp orange/u-boot_OPI*.fex $odir/boot > /dev/null 2>&1
+cp orange/uImage_OPI-2 $odir/boot/uImage > /dev/null 2>&1
+cp orange/script.bin.OPI-* $odir/boot > /dev/null 2>&1
+cp -rf orange/lib/modules $odir/lib
+if [ ! "${_boot_on_ext4}" = "yes" ] ; then
+    cp orange/uImage_OPI-2 $bootdir/uImage > /dev/null 2>&1
+	cp orange/uImage_OPI* $bootdir > /dev/null 2>&1
+	cp orange/script.bin.OPI-* $bootdir > /dev/null 2>&1
+fi
+# ==========================================================
+
+sync
+
+rm -rf $odir/dev/*
+rm -rf $odir/proc/*
+rm -rf $odir/run/*
+rm -rf $odir/sys/*
+rm -rf $odir/tmp/*
+
+echo ""
+
+# ***************
+# Create fstab
+# ***************
+echo "Creating \"fstab\""
+echo "# OrangePI fstab" > $odir/etc/fstab
+if [ "${_format}" = "btrfs" ] ; then
+    echo "/dev/mmcblk0p2  /  btrfs subvolid=0,noatime,nodiratime,compress=lzo  0 1" >> $odir/etc/fstab
+else
+    echo "/dev/mmcblk0p2  /  ext4  errors=remount-ro,noatime,nodiratime  0 1" >> $odir/etc/fstab
+fi
+echo "/dev/mmcblk0p1  /media/boot  vfat  defaults  0 0" >> $odir/etc/fstab
+echo "tmpfs /tmp  tmpfs nodev,nosuid,mode=1777  0 0" >> $odir/etc/fstab
+
+sync
+
+# ================================================
+# IF CREATING IMAGE unmount and create final image
+# ================================================
+if [ ! "${sdcard}" = "" ]; then
+    if [ ! "${_boot_on_ext4}" = "yes" ] ; then
+      if ! umount -l $bootdir; then
+	  echo "ERROR unmounting fat partition."
+	  exit 0
+      fi
+      rm -rf $bootdir/* > /dev/null 2>&1
+      rmdir $bootdir > /dev/null 2>&1
+    fi
+    if ! umount -l $odir; then
+	echo "ERROR unmounting ext4 partitions."
+	exit 0
+    fi
+    rm -rf $odir/* > /dev/null 2>&1
+    rmdir $odir > /dev/null 2>&1
+    sync
+
+    echo "Creating SDCard image..."
+    dd if=${sdcard}u of=${sdcard} > /dev/null 2>&1
+    if [ -f ${sdcard}1 ]; then
+        dd if=${sdcard}1 of=${sdcard} bs=1M conv=notrunc oflag=append > /dev/null 2>&1
+    fi
+    if [ -f ${sdcard}2 ]; then
+        dd if=${sdcard}2 of=${sdcard} bs=1M conv=notrunc oflag=append > /dev/null 2>&1
+    fi
+
+    if [ "${_compress}" = "yes" ]; then
+        echo "Compressing image..."
+        xz -z -k -9 -f -v $sdcard
+        md5sum $sdcard > $sdcard.md5sum
+        md5sum $sdcard.xz > $sdcard.xz.md5sum
+    fi
+fi
+
+if [ "${_directsd}" = "yes" ] ; then
+    if ! umount $odir; then
+	echo "ERROR unmounting ext4 partitions."
+    fi
+fi
+
+echo ""
+date
+echo ""
+echo "************************************************************"
+echo "Instalation finished."
+echo ""
+if [ ! "${sdcard}" = "" ]; then
+    echo "You have bootable OrangePI SD Card image \"${sdcard}\"."
+    echo "Use dd to copy to your SDCard"
+    echo "  e.g. sudo dd if=$sdcard of=/dev/<your_sdcard> bs=1M"
+else
+    if [ "${_directsd}" = "yes" ] ; then
+        echo "You have OrangePI $distro instalation on $image_name."
+    else
+	if [ ! "${_boot_on_ext4}" = "yes" ] ; then
+	    echo "Copy files from $bootdir to SD Card boot partition"
+	    echo "  e.g.  cp $bootdir/* <path_to_sdcard_boot_mount>"
+	    echo "  and rsync $odir to SD Card ext4 partition."
+	    echo "  e.g. sudo rsync -r -t -p -o -g -x -v --progress --delete -l -H -D --numeric-ids -s $PWD/$odir/ <path_to_sdcard_ext4_mount>/"
+	else
+	    echo "Rsync files from $odir to SD Card ext4 partition"
+	    echo "  e.g. sudo rsync -r -t -p -o -g -x -v --progress --delete -l -H -D --numeric-ids -s $PWD/$odir/ <path_to_sdcard_ext4_mount>/"
+	fi
+	echo ""
+	echo "Or create SDCard image running:"
+	echo "  sudo ./image_from_dir $odir <DEVICE|IMAGE>"
+    fi
+    echo ""
+    echo "You can chroot into \"$odir\" to make additional changes:"
+    if [ "${_directsd}" = "yes" ] ; then
+        echo "  sudo mount $image_name $odir"
+    fi
+    echo "  sudo chroot $odir /usr/bin/qemu-arm-static -cpu cortex-a9 /bin/bash"
+fi
+echo ""
+echo -e "\033[36m"
+echo "************************************************************"
+echo "* AFTER BOOTING:                                           *"
+echo "* -------------------------------------------------------- *"
+echo "* To RESIZE LINUX partition to fill sd card run:           *"
+echo "*   sudo fs_resize                                         *"
+echo "* -------------------------------------------------------- *"
+echo "* To change the board type / update run:                   *"
+echo "*   sudo update_boot.sh                                    *"
+echo "* -------------------------------------------------------- *"
+echo "* To install to EMMC run:                                  *"
+echo "*   sudo install_to_emmc                                   *"
+echo "* -------------------------------------------------------- *"
+echo "* To install desktop run:                                  *"
+echo "*   sudo install_lxde_desktop                              *"
+echo "*   or, for better-looking (vivid&jessie)                  *"
+echo "*   sudo install_mate_desktop                              *"
+echo "*   DON'T FORGET TO RESIZE SD CARD IF NECESSARY FIRST      *"
+echo "* -------------------------------------------------------- *"
+echo "* To configure your local settings use:                    *"
+echo "*   sudo dpkg-reconfigure tzdata                           *"
+echo "*   sudo dpkg-reconfigure keyboard-configuration           *"
+echo "*   sudo dpkg-reconfigure console-setup                    *"
+echo "*     # change your system's locale entries by modifying   *"
+echo "*     # the file /etc/default/locale (e.g. en_US.UTF-8)    *"
+echo "*     # then run:                                          *"
+echo "*   sudo locale-gen <your_locale> (e.g en_US.UTF-8)        *"
+echo "*   sudo dpkg-reconfigure locales                          *"
+echo "************************************************************"
+echo -e "\033[37m"
+date
+echo ""
+
+exit 0

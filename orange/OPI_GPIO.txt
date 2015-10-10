@@ -1,0 +1,34 @@
+===========================================================================
+GPIO-NUM          PORT       1-wire             ALTERNATE FUNCTION
+===========================================================================
+gpio_pin_1        PL10                          NOT ON HEADER (standby LED)
+gpio_pin_2        PA15                          NOT ON HEADER (normal LED)
+gpio_pin_3        PA12           12             TWI0-SDA
+gpio_pin_4        PA11           11             TWI0-SCK
+gpio_pin_5        PA06            6             PWM1
+gpio_pin_6        PA13           13             UART3-TX
+gpio_pin_7        PA14           14             UART3-RX
+gpio_pin_8        PA01            1             UART2-RX
+gpio_pin_9        PD14          110             gmac (OPI-PLUS)
+gpio_pin_10       PA00            0             NOT ON HEADER (UART2-TX)
+gpio_pin_11       PA03            3             UART2-CTS
+gpio_pin_12       PC04           68             free
+gpio_pin_13       PC07           71             free
+gpio_pin_14       PC00           64             SPI0-MOSI
+gpio_pin_15       PC01           65             SPI0-MISO
+gpio_pin_16       PA02            2             UART2-RTS
+gpio_pin_17       PC02           66             SPI0-CLK
+gpio_pin_18       PC03           67             SPI0-CS0
+gpio_pin_19       PA21           21             free
+gpio_pin_20       PA19           19             TWI1-SDA
+gpio_pin_21       PA18           18             TWI1-SCK
+gpio_pin_22       PA07            7             free
+gpio_pin_23       PA08            8             free
+gpio_pin_24       PG08          200             UART1-RTS
+gpio_pin_25       PA09            9             free
+gpio_pin_26       PA10           10             free
+gpio_pin_27       PG09          201             UART1-CTS
+gpio_pin_28       PA20           20             free
+gpio_pin_29       PG06          198             UART1-TX
+gpio_pin_30       PG07          197             UART1-RX
+===========================================================================

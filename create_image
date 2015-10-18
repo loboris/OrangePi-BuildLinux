@@ -12,9 +12,9 @@ fi
 
 echo ""
 date
-echo -e "\033[36m======================================================="
-echo -e "Creating Ubuntu/Debian SD Card instalation for OrangePI"
-echo -e "=======================================================\033[37m"
+echo -e "\033[36m========================================================"
+echo -e "Creating Ubuntu/Debian SD Card installation for OrangePI"
+echo -e "========================================================\033[37m"
 echo ""
 
 _DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
@@ -222,17 +222,17 @@ fi
 #if ! chroot $odir /bin/bash /second-stage; then
 if ! chroot $odir /usr/bin/qemu-arm-static -cpu cortex-a9 /bin/bash /second-stage; then
     mv $odir/install.log . > /dev/null 2>&1
-    echo "================================================"
-    echo "ERROR on second-stage, instalation NOT FINISHED."
-    echo "================================================"
+    echo "================================================="
+    echo "ERROR on second-stage, installation NOT FINISHED."
+    echo "================================================="
     exit 1
 fi
 
 if [ ! -f $odir/_OK_ ]; then
     mv $odir/install.log . > /dev/null 2>&1
-    echo "================================================"
-    echo "ERROR on second-stage, instalation NOT FINISHED."
-    echo "================================================"
+    echo "================================================="
+    echo "ERROR on second-stage, installation NOT FINISHED."
+    echo "================================================="
     exit 1
 fi
 
@@ -379,7 +379,7 @@ echo ""
 date
 echo ""
 echo "************************************************************"
-echo "Instalation finished."
+echo "Installation finished."
 echo ""
 if [ ! "${sdcard}" = "" ]; then
     echo "You have bootable OrangePI SD Card image \"${sdcard}\"."
@@ -387,7 +387,7 @@ if [ ! "${sdcard}" = "" ]; then
     echo "  e.g. sudo dd if=$sdcard of=/dev/<your_sdcard> bs=1M"
 else
     if [ "${_directsd}" = "yes" ] ; then
-        echo "You have OrangePI $distro instalation on $image_name."
+        echo "You have OrangePI $distro installation on $image_name."
     else
 	if [ ! "${_boot_on_ext4}" = "yes" ] ; then
 	    echo "Copy files from $bootdir to SD Card boot partition"

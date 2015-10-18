@@ -50,7 +50,7 @@ else
 fi
 echo ""
 if [ $part_end -ge $sdcard_end ]; then
-    echo "Partition allready maximum size !"
+    echo "Partition already has maximum size!"
     rm /usr/local/bin/fs_resize_warning > /dev/null 2>&1
     exit 0
 fi
@@ -59,7 +59,7 @@ echo -n "WARNING: Do you want to resize \"$sdcard_part\" (y/N)?  "
 read -n 1 ANSWER
 if [ ! "${ANSWER}" = "y" ] ; then
     echo ""
-    echo "Canceled.."
+    echo "Cancelled.."
     exit 0
 fi
 echo ""

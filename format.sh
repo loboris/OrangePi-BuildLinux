@@ -5,9 +5,9 @@ if [ "${_format}" = "btrfs" ]; then
     _boot_on_ext4="no"
 fi
 
-# ======================================================================
-# IF CREATING ON IMMAGE, PREPARE SD CARD IMAGE FOR ORANGEPI - LINUX BOOT
-# ----------------------------------------------------------------------
+# =====================================================================
+# IF CREATING ON IMAGE, PREPARE SD CARD IMAGE FOR ORANGEPI - LINUX BOOT
+# ---------------------------------------------------------------------
 # === CHECK DESTINATION ============================================
 if [ ! "${image_name}" = "" ]; then
     rm ${sdcard}1 > /dev/null 2>&1
@@ -158,45 +158,45 @@ if [ ! "${sdcard}" = "" ]; then
 
     echo ""
     if [ ! "${_boot_on_ext4}" = "yes" ] ; then
-        echo "Formating fat partition ..."
+        echo "Formatting fat partition ..."
         mkfs -t vfat -F 32 -n BOOT ${sdcard}1 > /dev/null 2>&1
         if [ $? -ne 0 ]; then
-            echo "ERROR formating fat partition."
+            echo "ERROR formatting fat partition."
             exit 0
         fi
         vfatuuid=`blkid -s UUID -o value ${sdcard}1`
         echo "  fat partition formated."
         if [ "${_format}" = "btrfs" ] ; then
-            echo "Formating linux partition (btrfs), please wait ..."
+            echo "Formatting linux partition (btrfs), please wait ..."
             # format as btrfs
             mkfs.btrfs -O ^extref,^skinny-metadata -f -L linux ${sdcard}2 > /dev/null 2>&1
             if [ $? -ne 0 ]; then
-                echo "ERROR formating btrfs partition."
+                echo "ERROR formatting btrfs partition."
                 exit 1
             fi
         else
-            echo "Formating linux partition (ext4), please wait ..."
+            echo "Formatting linux partition (ext4), please wait ..."
             mkfs -F -t ext4 -L linux ${sdcard}2 > /dev/null 2>&1
             if [ $? -ne 0 ]; then
-                echo "ERROR formating ext4 partition."
+                echo "ERROR formatting ext4 partition."
                 exit 1
             fi
         fi
         ext4uuid=`blkid -s UUID -o value ${sdcard}2`
     else
         if [ "${_format}" = "btrfs" ] ; then
-            echo "Formating linux partition (btrfs), please wait ..."
+            echo "Formatting linux partition (btrfs), please wait ..."
             # format as btrfs
             mkfs.btrfs -O ^extref,^skinny-metadata -f -L linux ${sdcard}2 > /dev/null 2>&1
             if [ $? -ne 0 ]; then
-                echo "ERROR formating btrfs partition."
+                echo "ERROR formatting btrfs partition."
                 exit 1
             fi
         else
-            echo "Formating linux partition (ext4), please wait ..."
+            echo "Formatting linux partition (ext4), please wait ..."
             mkfs -F -t ext4 -L linux ${sdcard}1 > /dev/null 2>&1
             if [ $? -ne 0 ]; then
-                echo "ERROR formating ext4 partition."
+                echo "ERROR formatting ext4 partition."
                 exit 0
             fi
         fi

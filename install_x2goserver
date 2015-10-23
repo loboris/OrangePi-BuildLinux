@@ -1,0 +1,59 @@
+#!/bin/bash
+
+if [ "$(id -u)" != "0" ]; then
+   echo "Script must be run as root !"
+   exit 0
+fi
+
+echo ""
+date
+echo "*********************"
+echo "Installing x2goserver"
+echo "*********************"
+echo ""
+
+_DST=`lsb_release -si`
+_REL=`lsb_release -sc`
+
+if [ ! "${_DST}" = "Ubuntu" ] ; then
+    echo "Preparing Debian for packages from Ubuntu-trusty ..."
+    # x2goserver on Debian needs some lib's from trusty !!!
+    echo "APT::Default-Release \"jessie\";" >> /etc/apt/apt.conf.d/70debconf
+    echo "deb http://ports.ubuntu.com/ubuntu-ports/ trusty main universe" >> /etc/apt/sources.list
+    apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 40976EAF437D05B5 3B4FE6ACC0B21F32 > /dev/null 2>&1
+    apt-get -y -q update > /dev/null 2>&1
+fi
+
+echo "Downloading the package ..."
+mkdir /tmp/x2go_install
+wget -O /tmp/x2go_install/x2goserver_install.tar.gz http://loboris.eu/x2goserver_install.tar.gz
+if [ ! -f /tmp/x2go_install/x2goserver_install.tar.gz ]; then
+    echo ""
+    echo "ERROR downloading the package from server, exiting."
+    rm -rf /tmp/x2go_install/*
+    rmdir /tmp/x2go_install
+    exit 1
+fi
+
+mkdir /tmp/x2go_install/files
+cd /tmp/x2go_install/files
+echo "Unpacking ..."
+tar -xf ../x2goserver_install.tar.gz > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+    echo "ERROR: tar"
+    cd /tmp
+    rm -rf x2go_install/*
+    rmdir x2go_install
+    exit 1
+fi
+echo "Installing..."
+dpkg -i *.deb > /dev/null 2>&1
+apt-get -y -q -f install > /dev/null 2>&1
+
+cd /tmp
+rm -rf x2go_install/*
+rmdir x2go_install
+
+
+echo ""
+echo "OK."

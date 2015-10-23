@@ -156,7 +156,7 @@ fi
 # ***************************
 echo "Creating \"sources.list\""
 case ${distro} in
-trusty|utopic|precise|vivid*)
+trusty|utopic|precise|vivid|wily*)
 cat > $odir/sources.list << _EOF_
 deb $repo/ $distro main restricted universe multiverse
 deb-src $repo/ $distro main restricted universe multiverse
@@ -210,7 +210,6 @@ cp second-stage $odir/second-stage
 cp params.sh $odir/params.sh
 if [ ! "${ONLY_BASE}" = "yes" ] ; then
     cp wallpaper.png $odir/ > /dev/null 2>&1
-	#cp orange/libjpeg62-turbo_1.3.1-12_armhf.deb $odir/ > /dev/null 2>&1
 fi
 
 # =====================================================================================
@@ -255,21 +254,57 @@ if [ ! "${ONLY_BASE}" = "yes" ] ; then
 fi
 # =========================================
 
-# === Copy kernel & modules ================================
+# === Copy kernel, modules & scripts =============================================
+mkdir -p $odir/boot > /dev/null 2>&1
+mkdir -p $odir/boot > /dev/null 2>&1
 mkdir -p $odir/boot > /dev/null 2>&1
 
+rm -r $odir/boot/* > /dev/null 2>&1
 cp orange/uImage_OPI* $odir/boot > /dev/null 2>&1
 cp orange/boot0_OPI.fex $odir/boot > /dev/null 2>&1
 cp orange/u-boot_OPI*.fex $odir/boot > /dev/null 2>&1
-cp orange/uImage_OPI-2 $odir/boot/uImage > /dev/null 2>&1
-cp orange/script.bin.OPI-* $odir/boot > /dev/null 2>&1
-cp -rf orange/lib/modules $odir/lib
-if [ ! "${_boot_on_ext4}" = "yes" ] ; then
-    cp orange/uImage_OPI-2 $bootdir/uImage > /dev/null 2>&1
-	cp orange/uImage_OPI* $bootdir > /dev/null 2>&1
-	cp orange/script.bin.OPI-* $bootdir > /dev/null 2>&1
+cp install_* $odir/usr/local/bin > /dev/null 2>&1
+cp fs_resize $odir/usr/local/bin > /dev/null 2>&1
+
+if [ "${3}" = "opi-2" ] || [ "${4}" = "opi-2" ]; then
+    cp orange/uImage_OPI-2 $odir/boot/uImage > /dev/null 2>&1
+    cp orange/script.bin.OPI-2_* $odir/boot > /dev/null 2>&1
+    if [ ! "${_boot_on_ext4}" = "yes" ] ; then
+        cp orange/uImage_OPI-2 $bootdir/uImage > /dev/null 2>&1
+        cp orange/script.bin.OPI-2_1080p60 $bootdir/script.bin > /dev/null 2>&1
+        cp orange/script.bin.OPI-2_* $bootdir > /dev/null 2>&1
+    fi
+elif [ "${3}" = "opi-pc" ] || [ "${4}" = "opi-pc" ]; then
+    cp orange/uImage_OPI-2 $odir/boot/uImage > /dev/null 2>&1
+    cp orange/script.bin.OPI-PC_* $odir/boot > /dev/null 2>&1
+    if [ ! "${_boot_on_ext4}" = "yes" ] ; then
+        cp orange/uImage_OPI-2 $bootdir/uImage > /dev/null 2>&1
+        cp orange/script.bin.OPI-PC_1080p60 $bootdir/script.bin > /dev/null 2>&1
+        cp orange/script.bin.OPI-PC_* $bootdir > /dev/null 2>&1
+    fi
+elif [ "${3}" = "opi-plus" ] || [ "${4}" = "opi-plus" ]; then
+    cp orange/uImage_OPI-PLUS $odir/boot/uImage > /dev/null 2>&1
+    cp orange/script.bin.OPI-PLUS_* $odir/boot > /dev/null 2>&1
+    if [ ! "${_boot_on_ext4}" = "yes" ] ; then
+        cp orange/uImage_OPI-PLUS $bootdir/uImage > /dev/null 2>&1
+        cp orange/script.bin.OPI-PLUS_1080p60 $bootdir/script.bin > /dev/null 2>&1
+        cp orange/script.bin.OPI-PLUS_* $bootdir > /dev/null 2>&1
+    fi
+else
+    cp orange/uImage_OPI-2 $odir/boot/uImage > /dev/null 2>&1
+    cp orange/script.bin.OPI-* $odir/boot > /dev/null 2>&1
+    if [ ! "${_boot_on_ext4}" = "yes" ] ; then
+        cp orange/uImage_OPI-2 $bootdir/uImage > /dev/null 2>&1
+        cp orange/uImage_OPI* $bootdir > /dev/null 2>&1
+        cp orange/script.bin.OPI-* $bootdir > /dev/null 2>&1
+    fi
 fi
-# ==========================================================
+
+cp -rf orange/lib/modules $odir/lib > /dev/null 2>&1
+cp -rf orange/lib/firmware $odir/lib > /dev/null 2>&1
+chown -R root:root $odir/lib/* > /dev/null 2>&1
+
+# ================================================================================
 
 sync
 
@@ -389,7 +424,7 @@ echo "*   sudo install_to_emmc                                   *"
 echo "* -------------------------------------------------------- *"
 echo "* To install desktop run:                                  *"
 echo "*   sudo install_lxde_desktop                              *"
-echo "*   or, for better-looking (vivid&jessie)                  *"
+echo "*   or, for better-looking (wily&vivid&jessie)             *"
 echo "*   sudo install_mate_desktop                              *"
 echo "*   DON'T FORGET TO RESIZE SD CARD IF NECESSARY FIRST      *"
 echo "* -------------------------------------------------------- *"

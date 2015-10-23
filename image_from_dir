@@ -19,13 +19,13 @@ cd $_DIR
 # ===================================================
 if [ "${1}" = "" ]; then
     echo "Source directory not specified."
-    echo "USAGE: image_from_dir <directory> <img_name | /dev/sdX>"
+    echo "USAGE: image_from_dir <directory> <img_name | /dev/sdX> [noformat] [opi-2|opi-PC|opi-plus]"
     exit 0
 fi
 
 if [ "${2}" = "" ]; then
     echo "Destination not specified."
-    echo "USAGE: image_from_dir <directory> <img_name | /dev/sdX>"
+    echo "USAGE: image_from_dir <directory> <img_name | /dev/sdX> [noformat] [opi-2|opi-PC|opi-plus]"
     exit 0
 fi
 
@@ -33,7 +33,7 @@ idir=$1
 
 if [ ! -d $idir ]; then
     echo "Source directory not found."
-    echo "USAGE: image_from_dir <directory> <img_name | /dev/sdX> [noformat]"
+    echo "USAGE: image_from_dir <directory> <img_name | /dev/sdX> [noformat] [opi-2|opi-PC|opi-plus]"
     exit 0
 fi
 # ===================================================
@@ -46,7 +46,7 @@ fi
 _ext4size=`du -s $1 | awk '{print $1}'`
 ext4sizeMB=$(expr $_ext4size / 1024)
 ext4size=$(expr $ext4sizeMB / 2 + $ext4sizeMB)
-linuxsize=$(expr $ext4sizeMB + 250)
+linuxsize=$(expr $ext4sizeMB + 350)
 
 _boot_on_ext4="no"
 
@@ -139,21 +139,58 @@ rsync -r -t -p -o -g -x --delete -l -H -D --numeric-ids -s --stats $idir/ $odir/
 #-------------------------------------------------------------------------------
 sync
 
-# === Copy kernel & modules ================================
+# === Copy kernel, modules & scripts =============================================
+rm -r $odir/boot/* > /dev/null 2>&1
 cp orange/uImage_OPI* $odir/boot > /dev/null 2>&1
 cp orange/boot0_OPI.fex $odir/boot > /dev/null 2>&1
 cp orange/u-boot_OPI*.fex $odir/boot > /dev/null 2>&1
-cp orange/uImage_OPI-2 $odir/boot/uImage > /dev/null 2>&1
-cp orange/script.bin.OPI-* $odir/boot > /dev/null 2>&1
-rm -r $odir/lib/* > /dev/null 2>&1
-cp -rf orange/lib/modules $odir/lib > /dev/null 2>&1
-if [ ! "${_boot_on_ext4}" = "yes" ] ; then
-    cp orange/uImage_OPI-2 $bootdir/uImage > /dev/null 2>&1
-	cp orange/uImage_OPI* $bootdir > /dev/null 2>&1
-	cp orange/script.bin.OPI-* $bootdir > /dev/null 2>&1
+cp fs_resize $odir/usr/local/bin > /dev/null 2>&1
+if [ "${3}" = "noinstallscr" ] || [ "${4}" = "noinstallscr" ] || [ "${5}" = "noinstallscr" ]; then
+    rm $odir/usr/local/bin/install_* > /dev/null 2>&1
+else
+    cp install_* $odir/usr/local/bin > /dev/null 2>&1
 fi
-cp install_* $odir/usr/local/bin > /dev/null 2>&1
-# ==========================================================
+
+if [ "${3}" = "opi-2" ] || [ "${4}" = "opi-2" ]; then
+    cp orange/uImage_OPI-2 $odir/boot/uImage > /dev/null 2>&1
+    cp orange/script.bin.OPI-2_* $odir/boot > /dev/null 2>&1
+    if [ ! "${_boot_on_ext4}" = "yes" ] ; then
+        cp orange/uImage_OPI-2 $bootdir/uImage > /dev/null 2>&1
+        cp orange/script.bin.OPI-2_1080p60 $bootdir/script.bin > /dev/null 2>&1
+        cp orange/script.bin.OPI-2_* $bootdir > /dev/null 2>&1
+    fi
+elif [ "${3}" = "opi-pc" ] || [ "${4}" = "opi-pc" ]; then
+    cp orange/uImage_OPI-2 $odir/boot/uImage > /dev/null 2>&1
+    cp orange/script.bin.OPI-PC_* $odir/boot > /dev/null 2>&1
+    if [ ! "${_boot_on_ext4}" = "yes" ] ; then
+        cp orange/uImage_OPI-2 $bootdir/uImage > /dev/null 2>&1
+        cp orange/script.bin.OPI-PC_1080p60 $bootdir/script.bin > /dev/null 2>&1
+        cp orange/script.bin.OPI-PC_* $bootdir > /dev/null 2>&1
+    fi
+elif [ "${3}" = "opi-plus" ] || [ "${4}" = "opi-plus" ]; then
+    cp orange/uImage_OPI-PLUS $odir/boot/uImage > /dev/null 2>&1
+    cp orange/script.bin.OPI-PLUS_* $odir/boot > /dev/null 2>&1
+    if [ ! "${_boot_on_ext4}" = "yes" ] ; then
+        cp orange/uImage_OPI-PLUS $bootdir/uImage > /dev/null 2>&1
+        cp orange/script.bin.OPI-PLUS_1080p60 $bootdir/script.bin > /dev/null 2>&1
+        cp orange/script.bin.OPI-PLUS_* $bootdir > /dev/null 2>&1
+    fi
+else
+    cp orange/uImage_OPI-2 $odir/boot/uImage > /dev/null 2>&1
+    cp orange/script.bin.OPI-* $odir/boot > /dev/null 2>&1
+    if [ ! "${_boot_on_ext4}" = "yes" ] ; then
+        cp orange/uImage_OPI-2 $bootdir/uImage > /dev/null 2>&1
+        cp orange/uImage_OPI* $bootdir > /dev/null 2>&1
+        cp orange/script.bin.OPI-* $bootdir > /dev/null 2>&1
+    fi
+fi
+
+rm -r $odir/lib/modules/* > /dev/null 2>&1
+cp -rf orange/lib/modules $odir/lib > /dev/null 2>&1
+rm -r $odir/lib/firmware/* > /dev/null 2>&1
+cp -rf orange/lib/firmware $odir/lib > /dev/null 2>&1
+
+# ================================================================================
 sync
 
 

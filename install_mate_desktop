@@ -37,7 +37,7 @@ _auto="-y -q"
 _DST=`lsb_release -si`
 _REL=`lsb_release -sc`
 
-if [ ! "${_REL}" = "jessie" ] && [ ! "${_REL}" = "vivid" ]; then
+if [ ! "${_REL}" = "jessie" ] && [ ! "${_REL}" = "vivid" ] && [ ! "${_REL}" = "wily" ]; then
   echo "Not supported on ${_DST}-${_REL}"
   exit 0
 fi

@@ -1,0 +1,34 @@
+
+Unpack archive to some empty directory, cd to it...
+
+===========================================================
+To update kernel copy uImage file to SD Card fat partition:
+-----------------------------------------------------------
+
+cp uImage_OPI_2 <path_to_fat_part>/uImage
+
+or
+
+cp uImage_OPI_PLUS <path_to_fat_part>/uImage
+
+to update kernel modules:
+
+sudo rm -rf /lib/modules/3.4.39/*
+sudo cp -rf lib/modules/3.4.39/* /lib/modules/3.4.39
+
+===========================================================
+
+===========================================================
+To update boot0 & u-boot run:
+-----------------------------------------------------------
+
+sudo dd if=boot0_sdcard_OPI-2.fex of=/dev/mmcblk0 bs=1k seek=8
+sudo dd if=u-boot_OPI-2.fex of=/dev/mmcblk0 bs=1k seek=16400
+
+or
+
+sudo dd if=boot0_sdcard_OPI-PLUS.fex of=/dev/mmcblk0 bs=1k seek=8
+sudo dd if=u-boot_OPI-PLUS.fex of=/dev/mmcblk0 bs=1k seek=16400
+
+===========================================================
+

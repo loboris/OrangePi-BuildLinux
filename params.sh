@@ -92,14 +92,15 @@ linuxsize=800
 #distro="precise"
 #distro="trusty"
 #distro="utopic"
-distro="vivid"
+#distro="vivid"
+distro="wily"
 repo="http://ports.ubuntu.com/ubuntu-ports"
 
 # === Debian ===
 #distro="wheezy"
 #distro="jessie"
 #repo="http://ftp.hr.debian.org/debian"
-raspbian="no"
+#raspbian="no"
 
 # === Raspbian ===
 #distro="wheezy"

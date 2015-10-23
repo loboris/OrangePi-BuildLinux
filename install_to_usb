@@ -1,0 +1,154 @@
+#!/bin/bash
+
+if [ "$(id -u)" != "0" ]; then
+   echo "Script must be run as root !"
+   exit 0
+fi
+
+
+echo ""
+date
+echo -e "\033[36m===================================="
+echo "Installing Linux system to USB drive"
+echo -e "====================================\033[37m"
+setterm -default
+echo ""
+
+
+fatsize=64
+
+sdcard=${1}
+_format=${2}
+
+odir="/tmp/_extdir"
+
+if [ ! -b ${sdcard} ]; then
+    echo "Error: USB partition not found."
+    exit 1
+fi
+
+umount ${sdcard} > /dev/null 2>&1
+#----------------------------------------------------------
+echo ""
+if [ "${_format}" = "noformat" ] ; then
+    echo -n "WARNING: USB partition ${sdcard} WILL BE UPDATED !, Continue (y/N)?  "
+else
+    echo -n "WARNING: USB partition ${sdcard} WILL BE ERASED !, Continue (y/N)?  "
+fi
+read -n 1 ANSWER
+
+if [ ! "${ANSWER}" = "y" ] ; then
+    echo "."
+    echo "Canceled.."
+    exit 0
+fi
+echo ""
+#----------------------------------------------------------
+
+if [ "${_format}" != "noformat" ] ; then
+    dd if=/dev/zero of=${sdcard} bs=1M count=1 oflag=direct > /dev/null 2>&1
+    sync
+    sleep 1
+    if [ "${_format}" = "btrfs" ] ; then
+        echo "Formating linux partition (btrfs), please wait ..."
+        # format as btrfs
+        mkfs.btrfs -O ^extref -f -L usblinux ${sdcard} > /dev/null 2>&1
+        if [ $? -ne 0 ]; then
+            echo "ERROR formating btrfs partition."
+            exit 1
+        fi
+    else
+        echo "Formating linux partition (ext4), please wait ..."
+        mkfs.ext4 -L usblinux ${sdcard} > /dev/null 2>&1
+        if [ $? -ne 0 ]; then
+            echo "ERROR formating ext4 partition."
+            exit 1
+        fi
+    fi
+    sync
+    echo "  linux partition formated."
+    #************************************************************************
+else
+  _ptype=`blkid | grep ${sdcard} | grep -o "\"btrfs\""`
+  if [ "${_ptype}" != "" ]; then
+    _format="btrfs"
+  fi
+fi
+
+# -------------------------------------------------------------------
+    
+if [ ! -d $odir ]; then
+    mkdir -p $odir
+fi
+rm -rf $odir/* > /dev/null 2>&1
+sync
+umount $odir > /dev/null 2>&1
+sleep 1
+
+# ================
+# MOUNT PARTITIONS
+# ================
+
+if [ "${_format}" = "btrfs" ] ; then
+    _mntopt="-o compress-force=lzo"
+else
+    _mntopt=""
+fi
+
+echo ""
+echo "Mounting USB partitions..."
+
+if ! mount ${_mntopt} ${sdcard} $odir; then
+    echo "ERROR mounting linux partitions..."
+    exit 1
+fi
+echo "linux partition mounted to $odir"
+
+
+#-----------------------------------------------------------------------------------------------
+echo ""
+echo "Copying file system to USB drive ..."
+echo ""
+
+#-----------------------------------------------------------------------------------------
+rsync -r -t -p -o -g -x --delete -l -H -D --numeric-ids -s --stats / $odir/ > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+    echo "  ERROR."
+fi
+#-----------------------------------------------------------------------------------------
+sync
+
+rm $odir/usr/local/bin/fs_resize_warning > /dev/null 2>&1
+
+echo "  Creating \"fstab\""
+echo "# OrangePI fstab" > $odir/etc/fstab
+if [ "${_format}" = "btrfs" ] ; then
+    echo "${sdcard}  /  btrfs subvolid=0,noatime,nodiratime,compress=lzo  0 1" >> $odir/etc/fstab
+else
+    echo "/dev/mmcblk0p2  /  ext4  errors=remount-ro,noatime,nodiratime  0 1" >> $odir/etc/fstab
+fi
+echo "/dev/mmcblk0p1  /media/boot  vfat  defaults  0 0" >> $odir/etc/fstab
+echo "tmpfs /tmp  tmpfs nodev,nosuid,mode=1777  0 0" >> $odir/etc/fstab
+sync
+
+
+echo "root=${sdcard}" > /media/boot/cmdline.txt
+
+# UMOUNT
+if ! umount $odir; then
+    echo "ERROR unmounting linux partitions."
+    exit 0
+fi
+
+rm -rf $odir/* > /dev/null 2>&1
+rmdir $odir > /dev/null 2>&1
+sync
+
+echo ""
+echo -e "\033[36m************************************"
+echo "Linux system installed to USB drive."
+echo -e "************************************\033[37m"
+setterm -default
+echo ""
+
+exit 0

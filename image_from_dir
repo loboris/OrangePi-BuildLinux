@@ -189,6 +189,7 @@ rm -r $odir/lib/modules/* > /dev/null 2>&1
 cp -rf orange/lib/modules $odir/lib > /dev/null 2>&1
 rm -r $odir/lib/firmware/* > /dev/null 2>&1
 cp -rf orange/lib/firmware $odir/lib > /dev/null 2>&1
+chown -R root:root $odir/lib/* > /dev/null 2>&1
 
 # ================================================================================
 sync

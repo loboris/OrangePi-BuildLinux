@@ -104,12 +104,12 @@ fi
 cat > /usr/local/bin/fs_resize_warning << _EOF_
 #!/bin/sh
 
-echo -e "\033[31m\033[1m****************************************"
+echo -e "\033[31m\033[1m***********************************************"
 echo -e "WARNING: TO RESIZE FILESYSTEM RUN:"
-echo -e "sudo fs_resize"
+echo -e "sudo fs_resize or sudo /usr/local/bin/fs_resize"
 echo -e "to remove this message run:"
 echo -e "sudo rm /usr/local/bin/fs_resize_warning"
-echo -e "****************************************\033[22m\033[37m"
+echo -e "***********************************************\033[22m\033[37m"
 setterm -default
 
 _EOF_

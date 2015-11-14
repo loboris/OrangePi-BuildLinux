@@ -271,7 +271,7 @@ if [ "${3}" = "opi-2" ] || [ "${4}" = "opi-2" ]; then
     cp orange/script.bin.OPI-2_* $odir/boot > /dev/null 2>&1
     if [ ! "${_boot_on_ext4}" = "yes" ] ; then
         cp orange/uImage_OPI-2 $bootdir/uImage > /dev/null 2>&1
-        cp orange/script.bin.OPI-2_1080p60 $bootdir/script.bin > /dev/null 2>&1
+        cp orange/script.bin.OPI-2_1080p60_hdmi $bootdir/script.bin > /dev/null 2>&1
         cp orange/script.bin.OPI-2_* $bootdir > /dev/null 2>&1
     fi
 elif [ "${3}" = "opi-pc" ] || [ "${4}" = "opi-pc" ]; then
@@ -279,7 +279,7 @@ elif [ "${3}" = "opi-pc" ] || [ "${4}" = "opi-pc" ]; then
     cp orange/script.bin.OPI-PC_* $odir/boot > /dev/null 2>&1
     if [ ! "${_boot_on_ext4}" = "yes" ] ; then
         cp orange/uImage_OPI-2 $bootdir/uImage > /dev/null 2>&1
-        cp orange/script.bin.OPI-PC_1080p60 $bootdir/script.bin > /dev/null 2>&1
+        cp orange/script.bin.OPI-PC_1080p60_hdmi $bootdir/script.bin > /dev/null 2>&1
         cp orange/script.bin.OPI-PC_* $bootdir > /dev/null 2>&1
     fi
 elif [ "${3}" = "opi-plus" ] || [ "${4}" = "opi-plus" ]; then
@@ -287,7 +287,7 @@ elif [ "${3}" = "opi-plus" ] || [ "${4}" = "opi-plus" ]; then
     cp orange/script.bin.OPI-PLUS_* $odir/boot > /dev/null 2>&1
     if [ ! "${_boot_on_ext4}" = "yes" ] ; then
         cp orange/uImage_OPI-PLUS $bootdir/uImage > /dev/null 2>&1
-        cp orange/script.bin.OPI-PLUS_1080p60 $bootdir/script.bin > /dev/null 2>&1
+        cp orange/script.bin.OPI-PLUS_1080p60_hdmi $bootdir/script.bin > /dev/null 2>&1
         cp orange/script.bin.OPI-PLUS_* $bootdir > /dev/null 2>&1
     fi
 else
@@ -297,6 +297,7 @@ else
         cp orange/uImage_OPI-2 $bootdir/uImage > /dev/null 2>&1
         cp orange/uImage_OPI* $bootdir > /dev/null 2>&1
         cp orange/script.bin.OPI-* $bootdir > /dev/null 2>&1
+        cp orange/script.bin.OPI-2_720p60_hdmi $bootdir/script.bin > /dev/null 2>&1
     fi
 fi
 

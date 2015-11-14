@@ -46,7 +46,7 @@ fi
 _ext4size=`du -s $1 | awk '{print $1}'`
 ext4sizeMB=$(expr $_ext4size / 1024)
 ext4size=$(expr $ext4sizeMB / 2 + $ext4sizeMB)
-linuxsize=$(expr $ext4sizeMB + 350)
+linuxsize=$(expr $ext4sizeMB + 500)
 
 _boot_on_ext4="no"
 
@@ -140,15 +140,24 @@ rsync -r -t -p -o -g -x --delete -l -H -D --numeric-ids -s --stats $idir/ $odir/
 sync
 
 # === Copy kernel, modules & scripts =============================================
+if [ ! -d $odir/usr/local/bin ]; then
+    mkdir -p $odir/usr/local/bin
+fi
+if [ ! -d $odir/boot ]; then
+    mkdir -p $odir/boot
+fi
+if [ ! -d $odir/media/boot ]; then
+    mkdir -p $odir/media/boot
+fi
 rm -r $odir/boot/* > /dev/null 2>&1
 cp orange/uImage_OPI* $odir/boot > /dev/null 2>&1
 cp orange/boot0_OPI.fex $odir/boot > /dev/null 2>&1
 cp orange/u-boot_OPI*.fex $odir/boot > /dev/null 2>&1
 cp fs_resize $odir/usr/local/bin > /dev/null 2>&1
+cp update_kernel.sh $odir/usr/local/bin > /dev/null 2>&1
+cp install_* $odir/usr/local/bin > /dev/null 2>&1
 if [ "${3}" = "noinstallscr" ] || [ "${4}" = "noinstallscr" ] || [ "${5}" = "noinstallscr" ]; then
-    rm $odir/usr/local/bin/install_* > /dev/null 2>&1
-else
-    cp install_* $odir/usr/local/bin > /dev/null 2>&1
+    rm $odir/usr/local/bin/install_*_desktop > /dev/null 2>&1
 fi
 
 if [ "${3}" = "opi-2" ] || [ "${4}" = "opi-2" ]; then
@@ -156,7 +165,7 @@ if [ "${3}" = "opi-2" ] || [ "${4}" = "opi-2" ]; then
     cp orange/script.bin.OPI-2_* $odir/boot > /dev/null 2>&1
     if [ ! "${_boot_on_ext4}" = "yes" ] ; then
         cp orange/uImage_OPI-2 $bootdir/uImage > /dev/null 2>&1
-        cp orange/script.bin.OPI-2_1080p60 $bootdir/script.bin > /dev/null 2>&1
+        cp orange/script.bin.OPI-2_1080p60_hdmi $bootdir/script.bin > /dev/null 2>&1
         cp orange/script.bin.OPI-2_* $bootdir > /dev/null 2>&1
     fi
 elif [ "${3}" = "opi-pc" ] || [ "${4}" = "opi-pc" ]; then
@@ -164,7 +173,7 @@ elif [ "${3}" = "opi-pc" ] || [ "${4}" = "opi-pc" ]; then
     cp orange/script.bin.OPI-PC_* $odir/boot > /dev/null 2>&1
     if [ ! "${_boot_on_ext4}" = "yes" ] ; then
         cp orange/uImage_OPI-2 $bootdir/uImage > /dev/null 2>&1
-        cp orange/script.bin.OPI-PC_1080p60 $bootdir/script.bin > /dev/null 2>&1
+        cp orange/script.bin.OPI-PC_1080p60_hdmi $bootdir/script.bin > /dev/null 2>&1
         cp orange/script.bin.OPI-PC_* $bootdir > /dev/null 2>&1
     fi
 elif [ "${3}" = "opi-plus" ] || [ "${4}" = "opi-plus" ]; then
@@ -172,7 +181,7 @@ elif [ "${3}" = "opi-plus" ] || [ "${4}" = "opi-plus" ]; then
     cp orange/script.bin.OPI-PLUS_* $odir/boot > /dev/null 2>&1
     if [ ! "${_boot_on_ext4}" = "yes" ] ; then
         cp orange/uImage_OPI-PLUS $bootdir/uImage > /dev/null 2>&1
-        cp orange/script.bin.OPI-PLUS_1080p60 $bootdir/script.bin > /dev/null 2>&1
+        cp orange/script.bin.OPI-PLUS_1080p60_hdmi $bootdir/script.bin > /dev/null 2>&1
         cp orange/script.bin.OPI-PLUS_* $bootdir > /dev/null 2>&1
     fi
 else
@@ -182,6 +191,7 @@ else
         cp orange/uImage_OPI-2 $bootdir/uImage > /dev/null 2>&1
         cp orange/uImage_OPI* $bootdir > /dev/null 2>&1
         cp orange/script.bin.OPI-* $bootdir > /dev/null 2>&1
+        cp orange/script.bin.OPI-2_720p60_hdmi $bootdir/script.bin > /dev/null 2>&1
     fi
 fi
 
@@ -201,15 +211,16 @@ sync
 cat > ${odir}/usr/local/bin/fs_resize_warning << _EOF_
 #!/bin/sh
 
-echo -e "\033[31m\033[1m****************************************"
+echo -e "\033[31m\033[1m***********************************************"
 echo -e "WARNING: TO RESIZE FILESYSTEM RUN:"
-echo -e "sudo fs_resize"
+echo -e "sudo fs_resize or sudo /usr/local/bin/fs_resize"
 echo -e "to remove this message run:"
 echo -e "sudo rm /usr/local/bin/fs_resize_warning"
-echo -e "****************************************\033[22m\033[37m"
+echo -e "***********************************************\033[22m\033[37m"
 setterm -default
 
 _EOF_
+chmod +x ${odir}/usr/local/bin/fs_resize_warning
 
 # ***************
 # Create fstab

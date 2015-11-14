@@ -90,10 +90,10 @@ linuxsize=800
 
 # === Ubuntu ===
 #distro="precise"
-#distro="trusty"
+distro="trusty"
 #distro="utopic"
 #distro="vivid"
-distro="wily"
+#distro="wily"
 repo="http://ports.ubuntu.com/ubuntu-ports"
 
 # === Debian ===

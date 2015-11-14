@@ -167,7 +167,7 @@ if [ ! "${sdcard}" = "" ]; then
         if [ "${_format}" = "btrfs" ] ; then
             echo "Formating linux partition (btrfs), please wait ..."
             # format as btrfs
-            mkfs.btrfs -O ^extref -f -L linux ${sdcard}2 > /dev/null 2>&1
+            mkfs.btrfs -O ^extref,^skinny-metadata -f -L linux ${sdcard}2 > /dev/null 2>&1
             if [ $? -ne 0 ]; then
                 echo "ERROR formating btrfs partition."
                 exit 1
@@ -185,7 +185,7 @@ if [ ! "${sdcard}" = "" ]; then
         if [ "${_format}" = "btrfs" ] ; then
             echo "Formating linux partition (btrfs), please wait ..."
             # format as btrfs
-            mkfs.btrfs -O ^extref -f -L linux ${sdcard}2 > /dev/null 2>&1
+            mkfs.btrfs -O ^extref,^skinny-metadata -f -L linux ${sdcard}2 > /dev/null 2>&1
             if [ $? -ne 0 ]; then
                 echo "ERROR formating btrfs partition."
                 exit 1

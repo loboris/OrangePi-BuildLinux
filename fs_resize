@@ -102,7 +102,10 @@ if [ \$? -eq 0 ]; then
     rm /usr/local/bin/fs_resize_warning
     rm /usr/local/bin/resize_fs
     sleep 2
-    if [ -d /etc/rc.d ]; then
+    if [ -d /etc/local.d ]; then
+        rm /etc/local.d/opi.start
+        mv /etc/local.d/opi.start.orig /etc/local.d/opi.start
+    elif [ -d /etc/rc.d ]; then
         if [ -f /etc/rc.d/after.local ]; then
             rm /etc/rc.d/after.local
             mv /etc/rc.d/after.local.orig /etc/rc.d/after.local
@@ -120,7 +123,18 @@ _EOF_
 chmod +x /usr/local/bin/resize_fs > /dev/null 2>&1
 
 
-if [ -d /etc/rc.d ]; then
+if [ -d /etc/local.d ]; then
+    if [ ! -f /etc/local.d/opi.start ]; then
+        cp /tmp/rc.local /etc/local.d/opi.start.orig
+        echo "exit 0" >> /etc/local.d/opi.start.orig
+        chmod +x /etc/local.d/opi.start.orig > /dev/null 2>&1
+    fi
+    echo "/usr/local/bin/resize_fs &&" >> /tmp/rc.local
+    echo "exit 0" >> /tmp/rc.local
+    mv /tmp/rc.local /etc/local.d/opi.start
+    chmod +x /etc/local.d/opi.start > /dev/null 2>&1
+
+elif [ -d /etc/rc.d ]; then
     if [ -f /etc/rc.d/after.local ]; then
         mv /etc/rc.d/after.local /etc/rc.d/after.local.orig
         echo "/usr/local/bin/resize_fs &&" >> /tmp/rc.local

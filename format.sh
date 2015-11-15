@@ -36,6 +36,8 @@ if [ ! "${image_name}" = "" ]; then
         # ========================================
         _directsd="no"
         _ddparm="conv=notrunc"
+        odir="_linux_img_mnt"
+        bootdir="_boot_img_mnt"
     fi
 else
     # === IN LOCAL DIRECTORY ===

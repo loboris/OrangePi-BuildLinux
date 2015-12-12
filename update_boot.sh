@@ -80,7 +80,7 @@ fi
 
 echo ""
 echo "==============================="
-echo "Select hdmi display resolutuin:"
+echo "Select hdmi display resolution:"
 echo "  1   1080p 60Hz"
 echo "  2   1080p 50Hz"
 echo "  3    720p 60Hz"

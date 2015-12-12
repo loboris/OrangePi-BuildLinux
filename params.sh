@@ -5,7 +5,7 @@
 
 
 # *****************************************************
-# Set to "yes" to create realy minimal image          *
+# Set to "yes" to create really minimal image         *
 # *****************************************************
 ONLY_BASE="no"
 
@@ -37,11 +37,11 @@ LANG="en_US.UTF-8"
 
 # *****************************************************
 # Set the base name of your image.                    *
-# Distro name is automaticaty appended, and the image *
-# will be "image_name-distro.img"                     *
+# Distro name is automatically appended, and the      *
+# image will be "image_name-distro.img".              *
 # --------------------------------------------------- *
 # IF image_name="", image file won't be created,      *
-# instalation will be created in local directories    *
+# installation will be created in local directories   *
 # linux-$distro & boot-$distro                        *
 # YOU CAN CREATE THE IMAGE LATER RUNNING:             *
 # sudo ./image_from_dir <directory> <DEVICE|IMAGE>    *
@@ -49,9 +49,10 @@ LANG="en_US.UTF-8"
 # --------------------------------------------------- *
 # IF image_name is BLOCK DEVICE (/dev/sdXn)           *
 # LINUX filesystem will be created directly on it     *
-# Partition must exist !                              *
+# partition must exist!                               *
 # IF _format="" partition will NOT be formated        *
-# otherwyse it will be formated with specified format *
+# otherwise it will be formatted with specified       *
+# format.                                             *
 # *****************************************************
 image_name=""
 #image_name="minimal"
@@ -120,7 +121,7 @@ _compress="yes"
 # IF YOU WANT TO HAVE BOOT FILES ON EXT4 PARTITION    =
 # AND NOT ON SEPARATE FAT16 PARTITION                 =
 # set  _boot_on_ext4="yes"  and                       =
-# FAT partitin won't be created                       =
+# FAT partition won't be created                      =
 # --------------------------------------------------- =
 # DO NOT CHANGE FOR NOW !                             =
 # =====================================================

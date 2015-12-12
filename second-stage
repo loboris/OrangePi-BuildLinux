@@ -418,7 +418,7 @@ chown -R $USER:$USER /home/$USER
 rm /usr/sbin/policy-rc.d
 
 echo ""
-echo "Instalation finished."
+echo "Installation finished."
 echo ""
 touch /_OK_
 
